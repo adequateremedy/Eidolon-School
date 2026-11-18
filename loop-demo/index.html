@@ -176,8 +176,8 @@
     };
 
     var PATH_OVAL  = 'M 340 190 L 660 190 A 130 160 0 0 1 660 510 L 340 510 A 130 160 0 0 1 340 190 Z';
-    var PATH_NOTCH = 'M 340 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 105 0 0 0 568 300 L 432 300 A 58 105 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
-    var PATH_TWIN  = 'M 340 190 L 432 190 A 58 52 0 0 0 568 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 55 0 0 0 568 400 L 432 400 A 58 55 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
+    var PATH_NOTCH = 'M 340 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 65 0 0 0 568 380 L 432 380 A 58 65 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
+    var PATH_TWIN  = 'M 340 190 L 392 190 A 52 60 0 0 0 496 190 L 660 190 A 130 160 0 0 1 660 510 L 640 510 A 52 60 0 0 0 640 390 L 520 390 A 52 60 0 0 0 520 510 L 340 510 A 130 160 0 0 1 340 190 Z';
 
     var ROUNDS = [
         {
@@ -192,7 +192,7 @@
         },
         {
             path: PATH_NOTCH, speed: 66, capacity: 9, dockCount: 2,
-            dockPos: [[330, 350], [670, 350]],
+            dockPos: [[318, 312, 11], [682, 312, 11]],
             crates: [['gear', 3], ['pliers', 4], ['nut', 3]],
             lines: [
                 { pos: [280, 118], side: 'above', items: ['gear', 'pliers', 'nut'] },
@@ -203,7 +203,7 @@
         },
         {
             path: PATH_TWIN, speed: 74, capacity: 10, dockCount: 3,
-            dockPos: [[295, 350], [705, 350], [500, 445, 10.5]],
+            dockPos: [[350, 405, 11], [645, 290, 11], [580, 495, 9.5]],
             crates: [['hammer', 4], ['gear', 4], ['screw', 4], ['bolt', 4]],
             lines: [
                 { pos: [260, 118], side: 'above', items: ['hammer', 'screw', 'bolt'] },
@@ -240,23 +240,23 @@
         });
         LEN = ridePath.getTotalLength();
         wheelLayer.innerHTML = '';
-        for (var dist = 0; dist < LEN; dist += 64) {
+        for (var dist = 0; dist < LEN; dist += 92) {
             var pt = ridePath.getPointAtLength(dist);
             var g = document.createElementNS(svgNS, 'g');
             var c = document.createElementNS(svgNS, 'circle');
-            c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 66);
+            c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 56);
             c.setAttribute('fill', '#241c14'); c.setAttribute('stroke', '#6d5626'); c.setAttribute('stroke-width', '5');
             g.appendChild(c);
             for (var s = 0; s < 3; s++) {
                 var a = (Math.PI * 2 / 3) * s;
                 var line = document.createElementNS(svgNS, 'line');
-                line.setAttribute('x1', pt.x - Math.cos(a) * 58); line.setAttribute('y1', pt.y - Math.sin(a) * 58);
-                line.setAttribute('x2', pt.x + Math.cos(a) * 58); line.setAttribute('y2', pt.y + Math.sin(a) * 58);
+                line.setAttribute('x1', pt.x - Math.cos(a) * 46); line.setAttribute('y1', pt.y - Math.sin(a) * 46);
+                line.setAttribute('x2', pt.x + Math.cos(a) * 46); line.setAttribute('y2', pt.y + Math.sin(a) * 46);
                 line.setAttribute('stroke', '#54431f'); line.setAttribute('stroke-width', '7');
                 g.appendChild(line);
             }
             var hub = document.createElementNS(svgNS, 'circle');
-            hub.setAttribute('cx', pt.x); hub.setAttribute('cy', pt.y); hub.setAttribute('r', 13);
+            hub.setAttribute('cx', pt.x); hub.setAttribute('cy', pt.y); hub.setAttribute('r', 11);
             hub.setAttribute('fill', '#a07d3c'); hub.setAttribute('stroke', '#5f4720'); hub.setAttribute('stroke-width', '3');
             g.appendChild(hub);
             g.dataset.cx = pt.x; g.dataset.cy = pt.y;
@@ -484,7 +484,7 @@
             tread.style.strokeDashoffset = -(odometer % 52);
             var wheels = wheelLayer.children;
             for (var w = 0; w < wheels.length; w++) {
-                wheels[w].setAttribute('transform', 'rotate(' + ((odometer / 66 * 57.3) % 360) + ' ' + wheels[w].dataset.cx + ' ' + wheels[w].dataset.cy + ')');
+                wheels[w].setAttribute('transform', 'rotate(' + ((odometer / 56 * 57.3) % 360) + ' ' + wheels[w].dataset.cx + ' ' + wheels[w].dataset.cy + ')');
             }
 
             // traffic: nobody passes the item ahead, nobody stacks
