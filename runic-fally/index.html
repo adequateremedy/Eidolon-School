@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Class 1: Runic-Fally</title>
-    <link rel="stylesheet" href="css/runic-fally.css?v=14">
+    <link rel="stylesheet" href="css/runic-fally.css?v=15">
 </head>
 <body>
 
@@ -13,6 +13,7 @@
     <div id="loadingScreen">
         <p>Syncing Desk with Google Drive...</p>
         <p id="loadingMsg"></p>
+        <button id="loadRetryBtn" class="hidden" style="margin-top: 15px;">Try Again</button>
         <div id="progressBarContainer" class="hidden">
             <div id="progressBarFill"></div>
         </div>
@@ -29,15 +30,15 @@
                 <p>I am sure you have already felt it—that unique Energy inside you. Even at such a young age, that Energy follows you, making connections and growing right alongside you.</p>
                 <p>In Runic-Fally, I teach our youngest Fae how to guide that Energy. Using just that sparkle in your fingertip, you will link matching Runic Stones together. As you drag your finger across them, the ancient symbols will glow white. Release your touch, and collect the chain to earn points toward your grade!</p>
                 <p>In order to pass this class successfully, you must gather 2,000 points.</p>
-                <p>But be mindful, little one: every new round introduces a brand new Runic Symbol to the board. The more Rounds it takes you, the harder it will become to see the connections. If the board becomes too difficult, you may be forced to restart the class from the beginning.</p>
+                <p>But be mindful, little one: as the Rounds go on, new Runic Symbols join the board, and the connections grow harder to see. Do not worry about losing your way — the board always keeps a match hidden somewhere for you to find.</p>
                 
                 <h3 style="margin-top: 20px;">Making Runic Stone Chains:</h3>
                 <ul>
                     <li>You must connect 3 or more matching stones to form a chain. The larger the chain, the more points you'll collect!</li>
-                    <li>3 Stones = 1 pt</li>
-                    <li>4 Stones = 5 pts</li>
-                    <li>5 Stones = 10 pts</li>
-                    <li>6+ Stones = 20 pts</li>
+                    <li>3 Stones = 5 pts</li>
+                    <li>4 Stones = 10 pts</li>
+                    <li>5 Stones = 20 pts</li>
+                    <li>6+ Stones = 40 pts</li>
                 </ul>
 
                 <h3 style="margin-top: 20px;">Star's Energy:</h3>
@@ -58,6 +59,10 @@
                 <p style="color: #d1c5b4; font-size: 0.85rem; margin-top: 15px;">(Reminder: 2,000 points are required to pass with an A+)</p>
             </div>
             <button id="continueClassBtn">Continue Class</button>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button id="instructionsBtn">How to Play</button>
+                <button id="restartClassBtn" class="danger-btn" style="margin-top: 0;">Restart Class</button>
+            </div>
         </div>
         
         <button id="hubRedirectBtn" style="margin-top: 20px; background: transparent; border: none; font-size: 0.8rem; text-decoration: underline;">Return to Hub</button>
@@ -77,6 +82,10 @@
                 <div class="stat-label">Time</div>
                 <div class="stat-value" id="uiTime">60</div>
             </div>
+            <div class="stat-box">
+                <button id="pauseBtn" style="padding: 6px 12px; font-size: 0.9rem;">Pause</button>
+                <button id="soundBtn" style="padding: 6px 12px; font-size: 0.9rem;">Sound: On</button>
+            </div>
         </div>
 
         <div id="inventoryBar">
@@ -85,10 +94,10 @@
                     <img src="assets/Star/Star-Symbol.png" alt="Star"> <span id="countReg">0</span>
                 </button>
                 <button id="btnStarBig" class="star-btn" style="color: #66ffff;" disabled>
-                    <img src="assets/Star/Star-Symbol.png" alt="Big Star"> <span id="countBig">0</span>
+                    <img src="assets/Star/Star-Symbol-Glow.png" alt="Big Star"> <span id="countBig">0</span>
                 </button>
                 <button id="btnStarGiant" class="star-btn" style="color: #ff66ff;" disabled>
-                    <img src="assets/Star/Star-Symbol.png" alt="Giant Star"> <span id="countGiant">0</span>
+                    <img src="assets/Star/Star-Symbol-Glow.png" alt="Giant Star"> <span id="countGiant">0</span>
                 </button>
             </div>
             <div id="totalPointsDisplay" style="font-size: 0.9rem; color: #e3d2b9; font-weight: bold;">
@@ -116,7 +125,6 @@
             <div class="modal-buttons">
                 <button id="nextRoundBtn">Next Round</button>
                 <button id="returnHubBtn">Go Back to Hub</button>
-                <button id="restartClassBtn" class="danger-btn">Restart Class</button>
             </div>
         </div>
     </div>
@@ -134,6 +142,35 @@
         </div>
     </div>
 
-    <script type="module" src="js/runic-fally.js?v=14"></script>
+    <div id="signinScreen" class="hidden">
+        <h1>Eidolon School</h1>
+        <p class="subtitle">Class 1: Runic-Fally (Ages 2-3)</p>
+        <p id="signinMsg">You need to be signed in to play this class, so your progress can be saved.</p>
+        <button id="signinBtn">Sign in with Google</button>
+        <div style="margin-top: 15px;">
+            <button id="signinHubBtn" style="background: transparent; border: none; font-size: 0.8rem; text-decoration: underline;">Return to Hub</button>
+        </div>
+    </div>
+
+    <div id="pauseModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 style="color:#e3d2b9; margin-top: 0;">Paused</h2>
+            <p>Your round is waiting right where you left it.</p>
+            <div class="modal-buttons">
+                <button id="resumeBtn">Resume</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="instructionsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div id="instructionsModalBody"></div>
+            <div class="modal-buttons">
+                <button id="instructionsCloseBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/runic-fally.js?v=15"></script>
 </body>
 </html>
