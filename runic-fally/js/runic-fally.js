@@ -52,12 +52,21 @@ function pauseBGM() {
 const sfxBlast = new Audio('assets/SFX/Star-Blast.mp3');
 sfxBlast.volume = 0.8;
 
+// SOUND ON/OFF (remembered between visits)
+let soundMuted = localStorage.getItem("rfMuted") === "1";
+function applyMute() {
+    BGM_TRACKS.forEach(t => t.muted = soundMuted);
+    sfxBlast.muted = soundMuted;
+}
+applyMute();
+
 const screens = {
     loading: document.getElementById('loadingScreen'),
     welcome: document.getElementById('welcomeScreen'),
     game: document.getElementById('gameUI'),
     tally: document.getElementById('tallyModal'),
-    complete: document.getElementById('completeModal')
+    complete: document.getElementById('completeModal'),
+    signin: document.getElementById('signinScreen')
 };
 
 function switchScreen(activeKey) {
@@ -65,17 +74,82 @@ function switchScreen(activeKey) {
     if(activeKey) screens[activeKey].classList.remove('hidden');
 }
 
-async function syncDriveData() {
-    const res = await fetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='character_data.json'", {
-        headers: { 'Authorization': `Bearer ${gDriveToken}` }
+async function fetchWithTimeout(url, options, ms = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function buildDefaultPlayerData() {
+    return {
+        account: { unlockedStars: 1, dismissedUpdates: [], seenUpdates: [] },
+        stars: {
+            "1": {
+                starName: "",
+                isComplete: false,
+                gens: {
+                    "1": {
+                        era: "Steampunk", realm: "Midgard", characterName: "", portraitUrl: "", portraitId: "",
+                        level: 1, exp: 0, birthBookCompleted: false, birthBookExpAwarded: false,
+                        schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
+                        journalEntries: [], rpSessions: [], inventory: [], versions: { runicFally: 2 }
+                    },
+                    "2": { unlocked: false }, "3": { unlocked: false }, "4": { unlocked: false }, "5": { unlocked: false }, "zenith": { unlocked: false }
+                }
+            },
+            "2": { unlocked: false }, "3": { unlocked: false }, "4": { unlocked: false }, "5": { unlocked: false }
+        }
+    };
+}
+
+async function createDriveDataFile(contentObj) {
+    const metadata = {
+        name: 'character_data.json',
+        parents: ['appDataFolder'],
+        mimeType: 'application/json'
+    };
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', new Blob([JSON.stringify(contentObj)], { type: 'application/json' }));
+
+    const res = await fetchWithTimeout('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${gDriveToken}` },
+        body: form
     });
-    const data = await res.json();
-    if (data.files && data.files.length > 0) {
-        dataFileId = data.files[0].id;
-        const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
+    if (res.status === 401) throw new Error("Token Expired");
+    const result = await res.json();
+    if (result.id) dataFileId = result.id;
+}
+
+async function syncDriveData() {
+    try {
+        const res = await fetchWithTimeout("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='character_data.json'", {
             headers: { 'Authorization': `Bearer ${gDriveToken}` }
         });
-        playerJsonData = await fileRes.json();
+        if (res.status === 401) throw new Error("Token Expired");
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+            dataFileId = data.files[0].id;
+            const fileRes = await fetchWithTimeout(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${gDriveToken}` }
+            });
+            if (fileRes.status === 401) throw new Error("Token Expired");
+            playerJsonData = await fileRes.json();
+        } else {
+            playerJsonData = buildDefaultPlayerData();
+            await createDriveDataFile(playerJsonData);
+        }
+    } catch (err) {
+        if (err.message === "Token Expired") throw err;
+        console.error("Drive sync failed:", err);
+        document.getElementById("loadingMsg").innerText = "Couldn't reach Google Drive, so your saved progress couldn't load. Check your connection and try again.";
+        document.getElementById("loadRetryBtn").classList.remove("hidden");
+        return false;
     }
 
     // Check for Generational Hub format and set pointer
@@ -105,41 +179,123 @@ async function syncDriveData() {
     if (!charData.inventory) {
         charData.inventory = [];
     }
+
+    // If the game was closed mid-round last visit, the device kept that round's
+    // earnings. Take them back when Drive still shows the round unplayed.
+    try {
+        const stashRaw = localStorage.getItem("rfClass1Stash");
+        if (stashRaw) {
+            const stash = JSON.parse(stashRaw);
+            if (stash.forRound === charData.class1Round && stash.basePoints === charData.class1Points) {
+                charData.class1Points = stash.points;
+                charData.class1Round = stash.round;
+                charData.class1TotalRunes = stash.totalRunes;
+                charData.class1RegularStars = stash.regularStars;
+                charData.class1BigStars = stash.bigStars;
+                charData.class1GiantStars = stash.giantStars;
+            } else if (charData.class1Points >= stash.points) {
+                localStorage.removeItem("rfClass1Stash");
+            }
+        }
+    } catch (e) { console.error("Round restore failed:", e); }
     
     state.regularStars = charData.class1RegularStars;
     state.bigStars = charData.class1BigStars;
     state.giantStars = charData.class1GiantStars;
 }
 
-// TOKEN REFRESH SAFETY NET HELPER (SILENT REFRESH)
+// SIGN-IN & TOKEN RECOVERY
+// When a save can't go through because the sign-in expired, the game says so
+// on its own sign-in screen and finishes the save once the player signs in.
+let pendingRetry = null;
+let uiRestore = null;
+let signInInFlight = false;
+
+function showSignIn(message) {
+    uiRestore = {
+        tally: !screens.tally.classList.contains('hidden'),
+        complete: !screens.complete.classList.contains('hidden')
+    };
+    screens.tally.classList.add('hidden');
+    screens.complete.classList.add('hidden');
+    if (message) document.getElementById("signinMsg").innerText = message;
+    switchScreen('signin');
+}
+
+function restoreUiAfterSignIn() {
+    if (!uiRestore) return;
+    if (uiRestore.complete) {
+        switchScreen('complete');
+    } else if (uiRestore.tally) {
+        switchScreen('game');
+        screens.tally.classList.remove('hidden');
+    }
+    uiRestore = null;
+}
+
+async function doSignIn() {
+    signInInFlight = true;
+    try {
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.appdata');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential) {
+            gDriveToken = credential.accessToken;
+            localStorage.setItem("gDriveToken", gDriveToken);
+        }
+        return result.user;
+    } finally {
+        signInInFlight = false;
+    }
+}
+
+async function finishSignIn() {
+    if (pendingRetry) {
+        const pending = pendingRetry;
+        pendingRetry = null;
+        await pending.fn();
+        if (pending.url) { window.location.href = pending.url; return; }
+        restoreUiAfterSignIn();
+    } else if (!booted) {
+        await boot();
+    } else {
+        restoreUiAfterSignIn();
+    }
+}
+
 async function safeAction(actionFunc, redirectUrl = null) {
     try {
         await actionFunc();
         if (redirectUrl) window.location.href = redirectUrl;
     } catch (err) {
         if (err.message === "Token Expired" || err.status === 401) {
-            try {
-                const provider = new GoogleAuthProvider();
-                provider.addScope('https://www.googleapis.com/auth/drive.appdata');
-                provider.setCustomParameters({ prompt: 'none' });
-                const result = await signInWithPopup(auth, provider);
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                gDriveToken = credential.accessToken;
-                localStorage.setItem("gDriveToken", gDriveToken);
-                
-                await actionFunc(); // Retry the save with the fresh token
-                if (redirectUrl) window.location.href = redirectUrl;
-            } catch (authErr) {
-                console.error("Re-authentication failed:", authErr);
-            }
+            pendingRetry = { fn: actionFunc, url: redirectUrl };
+            showSignIn("Your sign-in expired. Sign in again so your progress can be saved safely.");
         } else {
             console.error("Action failed:", err);
         }
     }
 }
 
+function stashRound() {
+    try {
+        const totalRunes = {};
+        RUNE_NAMES.forEach(n => totalRunes[n] = (charData.class1TotalRunes[n] || 0) + (state.collectedRunes[n] || 0));
+        localStorage.setItem("rfClass1Stash", JSON.stringify({
+            forRound: charData.class1Round,
+            basePoints: charData.class1Points,
+            points: charData.class1Points + state.roundScore,
+            round: charData.class1Round + 1,
+            totalRunes: totalRunes,
+            regularStars: state.regularStars,
+            bigStars: state.bigStars,
+            giantStars: state.giantStars
+        }));
+    } catch (e) { console.error("Round stash failed:", e); }
+}
+
 async function saveDriveData() {
-    if (!dataFileId) return;
     charData.class1Exp = Math.floor(charData.class1Points / POINTS_PER_EXP);
     if (charData.class1Exp > 100) charData.class1Exp = 100;
     
@@ -147,7 +303,13 @@ async function saveDriveData() {
     charData.class1BigStars = state.bigStars;
     charData.class1GiantStars = state.giantStars;
     
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=media`, {
+    if (!dataFileId) {
+        await createDriveDataFile(playerJsonData);
+        localStorage.removeItem("rfClass1Stash");
+        return;
+    }
+    
+    const res = await fetchWithTimeout(`https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=media`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${gDriveToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(playerJsonData)
@@ -156,6 +318,7 @@ async function saveDriveData() {
     if (res.status === 401) {
         throw new Error("Token Expired");
     }
+    localStorage.removeItem("rfClass1Stash");
 }
 
 async function uploadImageToDrive(file) {
@@ -180,12 +343,32 @@ async function uploadImageToDrive(file) {
 }
 
 // AUTHENTICATION & INITIALIZATION
+let booted = false;
+async function boot() {
+    if (booted) return;
+    try {
+        const ok = await syncDriveData();
+        if (ok) {
+            booted = true;
+            initAssetLoading();
+        }
+    } catch (err) {
+        if (err.message === "Token Expired") {
+            pendingRetry = { fn: () => boot(), url: null };
+            showSignIn("Your sign-in expired. Sign in again so your progress can load.");
+        } else {
+            console.error("Boot failed:", err);
+        }
+    }
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (user && gDriveToken) {
-        await syncDriveData();
-        initAssetLoading();
-    } else {
-        window.location.href = "https://adequateremedy.github.io/RPG-Hub/";
+        await boot();
+    } else if (!signInInFlight) {
+        showSignIn(user
+            ? "Your Google sign-in needs a refresh so the game can reach your saved progress."
+            : "You need to be signed in to play this class, so your progress can be saved.");
     }
 });
 
@@ -202,27 +385,32 @@ document.getElementById("hubRedirectBtn").addEventListener("click", () => {
     safeAction(saveDriveData, url);
 });
 
+async function resetClass1() {
+    charData.class1Points = 0;
+    charData.class1Round = 1;
+    charData.class1Exp = 0;
+    charData.class1RegularStars = 0;
+    charData.class1BigStars = 0;
+    charData.class1GiantStars = 0;
+    RUNE_NAMES.forEach(n => charData.class1TotalRunes[n] = 0);
+    if (charData.schoolProgress) charData.schoolProgress.class1 = false;
+    state.regularStars = 0;
+    state.bigStars = 0;
+    state.giantStars = 0;
+    localStorage.removeItem("rfClass1Stash");
+    await saveDriveData();
+    pauseBGM();
+    BGM_TRACKS[currentTrackIndex].currentTime = 0;
+    currentTrackIndex = 0;
+    screens.tally.classList.add('hidden');
+    screens.complete.classList.add('hidden');
+    startRound();
+}
+
 document.getElementById("restartClassBtn").addEventListener("click", () => {
-    const confirmRestart = confirm("Are you sure you want to restart Class 1? All progress and points will be erased.");
+    const confirmRestart = confirm("Are you sure you want to restart Class 1? All progress and points for this class will be erased.");
     if (confirmRestart) {
-        safeAction(async () => {
-            charData.class1Points = 0;
-            charData.class1Round = 1;
-            charData.class1Exp = 0;
-            charData.class1RegularStars = 0;
-            charData.class1BigStars = 0;
-            charData.class1GiantStars = 0;
-            RUNE_NAMES.forEach(n => charData.class1TotalRunes[n] = 0);
-            state.regularStars = 0;
-            state.bigStars = 0;
-            state.giantStars = 0;
-            await saveDriveData();
-            pauseBGM();
-            BGM_TRACKS[currentTrackIndex].currentTime = 0;
-            currentTrackIndex = 0;
-            screens.tally.classList.add('hidden');
-            startRound();
-        });
+        safeAction(resetClass1);
     }
 });
 
@@ -242,25 +430,69 @@ document.getElementById("continueClassBtn").addEventListener("click", () => {
 document.getElementById("retakeGraduateBtn").addEventListener("click", () => {
     const confirmRetake = confirm("Are you sure you want to retake the class? This will erase your 2,000 points and return you to Round 1.");
     if (confirmRetake) {
-        safeAction(async () => {
-            charData.class1Points = 0;
-            charData.class1Round = 1;
-            charData.class1Exp = 0;
-            charData.class1RegularStars = 0;
-            charData.class1BigStars = 0;
-            charData.class1GiantStars = 0;
-            RUNE_NAMES.forEach(n => charData.class1TotalRunes[n] = 0);
-            state.regularStars = 0;
-            state.bigStars = 0;
-            state.giantStars = 0;
-            await saveDriveData();
-            pauseBGM();
-            BGM_TRACKS[currentTrackIndex].currentTime = 0;
-            currentTrackIndex = 0;
-            screens.complete.classList.add('hidden');
-            startRound();
-        });
+        safeAction(resetClass1);
     }
+});
+
+// SIGN-IN SCREEN BUTTONS
+document.getElementById("signinBtn").addEventListener("click", async () => {
+    try {
+        await doSignIn();
+        await finishSignIn();
+    } catch (err) {
+        console.error("Sign-in failed:", err);
+        document.getElementById("signinMsg").innerText = "Sign-in didn't finish. Please try again.";
+    }
+});
+
+document.getElementById("signinHubBtn").addEventListener("click", () => {
+    window.location.href = "https://adequateremedy.github.io/RPG-Hub/";
+});
+
+document.getElementById("loadRetryBtn").addEventListener("click", () => {
+    window.location.reload();
+});
+
+// PAUSE & SOUND BUTTONS
+document.getElementById("pauseBtn").addEventListener("click", () => {
+    if (!state.playing || state.paused) return;
+    state.paused = true;
+    pauseBGM();
+    document.getElementById("pauseModal").classList.remove("hidden");
+    updateUI();
+});
+
+document.getElementById("resumeBtn").addEventListener("click", () => {
+    if (!state.paused) return;
+    state.paused = false;
+    document.getElementById("pauseModal").classList.add("hidden");
+    playBGM();
+    updateUI();
+});
+
+const soundBtn = document.getElementById("soundBtn");
+function refreshSoundBtn() { soundBtn.innerText = soundMuted ? "Sound: Off" : "Sound: On"; }
+soundBtn.addEventListener("click", () => {
+    soundMuted = !soundMuted;
+    localStorage.setItem("rfMuted", soundMuted ? "1" : "0");
+    applyMute();
+    refreshSoundBtn();
+    if (!soundMuted && state.playing && !state.paused) playBGM();
+});
+refreshSoundBtn();
+
+// HOW TO PLAY (readable any time from the welcome screen)
+document.getElementById("instructionsBtn").addEventListener("click", () => {
+    const body = document.getElementById("instructionsModalBody");
+    if (!body.hasChildNodes()) {
+        const panel = document.querySelector('#newPlayerPanel .instructions-panel');
+        if (panel) body.appendChild(panel.cloneNode(true));
+    }
+    document.getElementById("instructionsModal").classList.remove("hidden");
+});
+
+document.getElementById("instructionsCloseBtn").addEventListener("click", () => {
+    document.getElementById("instructionsModal").classList.add("hidden");
 });
 
 document.getElementById("saveGraduateBtn").addEventListener("click", () => {
@@ -331,6 +563,7 @@ let state = {
     giantStars: 0,
     timeLeft: 60,
     playing: false,
+    paused: false,
     inputLocked: false,
     dragging: false,
     selection: [],
@@ -343,6 +576,18 @@ let state = {
 };
 
 let timerInterval;
+
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if(!state.playing || state.paused) return;
+        state.timeLeft--;
+        updateUI();
+        if(state.timeLeft <= 0) {
+            endRound();
+        }
+    }, 1000);
+}
 
 function updateProgress() {
     const percent = Math.floor((imagesLoaded / totalImages) * 100);
@@ -397,7 +642,8 @@ function calculateGrade(points) {
     let percent = Math.floor((points / MAX_POINTS) * 100);
     if (percent > 100) percent = 100;
     let grade = "F";
-    if (percent >= 90) grade = "A";
+    if (points >= MAX_POINTS) grade = "A+";
+    else if (percent >= 85) grade = "A";
     else if (percent >= 70) grade = "B";
     else if (percent >= 50) grade = "C";
     else if (percent >= 30) grade = "D";
@@ -425,7 +671,7 @@ function showWelcomeScreen() {
         const result = calculateGrade(charData.class1Points);
         document.getElementById("welcomeGrade").innerText = result.grade;
         document.getElementById("welcomePercent").innerText = result.percent;
-        const gradeColor = result.grade === "A" ? "#4caf50" : 
+        const gradeColor = (result.grade === "A" || result.grade === "A+") ? "#4caf50" : 
                            result.grade === "B" ? "#8bc34a" : 
                            result.grade === "C" ? "#ffeb3b" : 
                            result.grade === "D" ? "#ff9800" : "#f44336";
@@ -603,6 +849,7 @@ function startRound() {
         state.roundScore = 0;
         state.timeLeft = 60;
         state.playing = true;
+        state.paused = false;
         state.inputLocked = false;
         state.bombMode = false;
         state.bombTier = null;
@@ -619,15 +866,7 @@ function startRound() {
         generateGrid();
         updateUI();
 
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            if(!state.playing) return;
-            state.timeLeft--;
-            updateUI();
-            if(state.timeLeft <= 0) {
-                endRound();
-            }
-        }, 1000);
+        startTimer();
         
         requestAnimationFrame(gameLoop);
     });
@@ -655,7 +894,7 @@ function endRound() {
     document.getElementById("tallyGrade").innerText = result.grade;
     document.getElementById("tallyPercent").innerText = result.percent;
     
-    const gradeColor = result.grade === "A" ? "#4caf50" : 
+    const gradeColor = (result.grade === "A" || result.grade === "A+") ? "#4caf50" : 
                        result.grade === "B" ? "#8bc34a" : 
                        result.grade === "C" ? "#ffeb3b" : 
                        result.grade === "D" ? "#ff9800" : "#f44336";
@@ -741,6 +980,7 @@ window.addEventListener('resize', resizeFx);
 resizeFx();
 
 function spawnGlobalSparkle(x, y) {
+    if (screens.game.classList.contains('hidden')) return;
     for(let i=0; i<2; i++) {
         globalSparkles.push(createSparkleParticle(x, y));
     }
@@ -754,6 +994,14 @@ window.addEventListener('touchmove', (e) => {
 }, {passive: true});
 
 function fxLoop() {
+    if (screens.game.classList.contains('hidden')) {
+        if (globalSparkles.length > 0) {
+            globalSparkles = [];
+            fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+        }
+        requestAnimationFrame(fxLoop);
+        return;
+    }
     fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
     for (let i = globalSparkles.length - 1; i >= 0; i--) {
         let p = globalSparkles[i];
@@ -785,7 +1033,7 @@ function setupInput() {
     };
 
     const onStart = (e) => {
-        if (!state.playing || state.inputLocked) return;
+        if (!state.playing || state.paused || state.inputLocked) return;
         const { r, c } = getGridPos(e);
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
 
@@ -812,7 +1060,7 @@ function setupInput() {
     };
 
     const onMove = (e) => {
-        if (!state.dragging || !state.playing || state.inputLocked) return;
+        if (!state.dragging || !state.playing || state.paused || state.inputLocked) return;
         
         const { r, c } = getGridPos(e);
         if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
@@ -842,14 +1090,15 @@ function setupInput() {
         const chainLength = state.selection.length;
         if (chainLength >= 3) {
             let ptsEarned = 0;
-            if (chainLength === 3) ptsEarned = 1;
-            else if (chainLength === 4) ptsEarned = 5;
-            else if (chainLength === 5) ptsEarned = 10;
-            else if (chainLength >= 6) ptsEarned = 20;
+            if (chainLength === 3) ptsEarned = 5;
+            else if (chainLength === 4) ptsEarned = 10;
+            else if (chainLength === 5) ptsEarned = 20;
+            else if (chainLength >= 6) ptsEarned = 40;
 
             let type = grid[state.selection[0].r][state.selection[0].c].type;
             state.roundScore += ptsEarned;
             state.collectedRunes[type] += chainLength;
+            stashRound();
             
             if (chainLength >= 4) {
                 awardStar();
@@ -934,6 +1183,7 @@ function explodeStar(r, c, tier) {
     // Play sound effect using the clone method
     const sfxClone = sfxBlast.cloneNode();
     sfxClone.volume = 0.8;
+    sfxClone.muted = soundMuted;
     sfxClone.play().catch(e => console.log("SFX play prevented:", e));
     sfxClone.addEventListener('ended', () => sfxClone.remove());
     
@@ -966,6 +1216,7 @@ function explodeStar(r, c, tier) {
     if (ptsEarned > 0) {
         floatingTexts.push({ x: cx, y: cy, text: `+${ptsEarned}`, life: 60, maxLife: 60 });
         state.roundScore += ptsEarned;
+        stashRound();
         pulseScoreboard();
     }
 
@@ -1000,6 +1251,7 @@ function processGravity() {
 }
 
 function updatePhysics() {
+    if (state.paused) return;
     // 1. Process Dissolve Timers (Flare -> Steam)
     if (state.inputLocked && state.dissolveTimer > 0) {
         state.dissolveTimer--;
@@ -1127,7 +1379,7 @@ function drawGrid() {
                     ctx.fill();
                     ctx.shadowBlur = 0;
                 }
-                img = ASSETS.star;
+                img = (cell.type === 'STAR_REGULAR') ? ASSETS.star : ASSETS.starGlow;
             } else {
                 img = (isSelected || isDissolving) ? ASSETS.glow[cell.type] : ASSETS.normal[cell.type];
             }
