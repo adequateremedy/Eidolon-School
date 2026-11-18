@@ -177,7 +177,7 @@
 
     var PATH_OVAL  = 'M 340 190 L 660 190 A 130 160 0 0 1 660 510 L 340 510 A 130 160 0 0 1 340 190 Z';
     var PATH_NOTCH = 'M 340 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 105 0 0 0 568 300 L 432 300 A 58 105 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
-    var PATH_TWIN  = 'M 340 190 L 432 190 A 58 75 0 0 0 568 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 68 0 0 0 568 375 L 432 375 A 58 68 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
+    var PATH_TWIN  = 'M 340 190 L 432 190 A 58 52 0 0 0 568 190 L 660 190 A 130 160 0 0 1 660 510 L 568 510 A 58 55 0 0 0 568 400 L 432 400 A 58 55 0 0 0 432 510 L 340 510 A 130 160 0 0 1 340 190 Z';
 
     var ROUNDS = [
         {
@@ -203,7 +203,7 @@
         },
         {
             path: PATH_TWIN, speed: 74, capacity: 10, dockCount: 3,
-            dockPos: [[295, 350], [500, 322], [705, 350]],
+            dockPos: [[295, 350], [705, 350], [500, 445, 10.5]],
             crates: [['hammer', 4], ['gear', 4], ['screw', 4], ['bolt', 4]],
             lines: [
                 { pos: [260, 118], side: 'above', items: ['hammer', 'screw', 'bolt'] },
@@ -352,6 +352,7 @@
             el.className = 'dock';
             el.style.left = (cfg.dockPos[i][0] / 10) + '%';
             el.style.top = (cfg.dockPos[i][1] / 7) + '%';
+            if (cfg.dockPos[i][2]) el.style.width = cfg.dockPos[i][2] + '%';
             dockLayer.appendChild(el);
             var dock = { el: el, crate: null, gate: nearestDist(cfg.dockPos[i][0], cfg.dockPos[i][1]), busy: false, pos: cfg.dockPos[i] };
             docks.push(dock);
