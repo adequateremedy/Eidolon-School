@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade & Tally Class</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=1">
 </head>
 
 <body>
@@ -30,6 +30,9 @@
             alt="Start Lesson"
         >
 
+        <button id="howto-btn-intro">How to Play</button>
+        <button id="reset-class-btn-intro" class="hidden">Reset Class (Start Over)</button>
+
     </div>
 
 
@@ -39,10 +42,11 @@
     <div id="game-screen" class="screen">
 
         <div id="game-ui-header">
-            <div id="round-display">Round: 1 / 10</div>
+            <div id="round-display">Round: 1 / 5</div>
             <div id="truck-display">On the Truck: 0 / 5</div>
             <div id="score-display">Score: 0 / 2000</div>
             <button id="pause-btn">Pause</button>
+            <button id="sound-btn">Sound: On</button>
         </div>
 
         <div id="game-layout">
@@ -73,6 +77,7 @@
         <div class="pause-content">
             <h2>Game Paused - Item Glossary</h2>
             <div id="glossary-grid"></div>
+            <button id="howto-btn-pause">How to Play</button>
             <button id="resume-btn">Resume Game</button>
         </div>
     </div>
@@ -90,35 +95,65 @@
 
 
     <!-- =========================================================
-         GAME OVER SCREEN
-         ========================================================= -->
-    <div id="game-over-screen" class="screen overlay-bg">
-        <img
-            id="game-over-img"
-            src="ui/game-over-screen.png"
-            alt="Shipment Ruined"
-        >
-        <p id="fail-reason-text"></p>
-        <button id="restart-btn">Try Again</button>
-    </div>
-
-
-    <!-- =========================================================
          VICTORY SCREEN
          ========================================================= -->
     <div id="victory-screen" class="screen overlay-bg">
         <div class="victory-content">
             <h2>Class Complete!</h2>
-            <p>You have perfectly packed all shipments.</p>
+            <p>You packed every shipment in all 5 rounds.</p>
             <p>Final Score: 2000 / 2000</p>
             <button id="return-hub-btn">Return to Hub (+100 EXP)</button>
+            <button id="reset-class-btn">Retake Class</button>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         HOW TO PLAY
+         ========================================================= -->
+    <div id="howto-screen" class="screen overlay-bg">
+        <div class="results-content" style="max-width: 640px; text-align: left;">
+            <h2 style="text-align: center;">How to Play</h2>
+            <p>Drag each item from the belt into a packing box.</p>
+            <p>A box only takes the items pictured on its tally board, in the amounts shown. Fill every line on a box's board and the box ships — 50 points each.</p>
+            <p>Items wearing a red no-pack badge are junk in Rounds 3 and 4. Never pack those — let them ride on by. In Round 5 they become real items and the badges come off.</p>
+            <p>If an item a box still needs reaches the end of the belt, it circles back to the start, so nothing is ever lost.</p>
+            <p>Ship every box in all 5 rounds to finish the class with 2,000 points.</p>
+            <div style="text-align: center;">
+                <button id="howto-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         SIGN-IN SCREEN
+         ========================================================= -->
+    <div id="signin-screen" class="screen overlay-bg">
+        <div class="results-content">
+            <h2>Eidolon School</h2>
+            <p>Class 2: Trade &amp; Tally (Ages 4-5)</p>
+            <p id="signin-msg">You need to be signed in to play this class, so your progress can be saved.</p>
+            <button id="signin-btn">Sign in with Google</button>
+            <div>
+                <button id="signin-hub-btn" style="background: transparent; border: none; font-size: 0.85rem; text-decoration: underline;">Return to Hub</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         SYNC ERROR SCREEN
+         ========================================================= -->
+    <div id="sync-error-screen" class="screen overlay-bg">
+        <div class="results-content">
+            <h2>Couldn't Reach Your Saves</h2>
+            <p id="sync-error-msg">Google Drive didn't answer, so your saved progress couldn't load. Check your connection and try again.</p>
+            <button id="sync-retry-btn">Try Again</button>
         </div>
     </div>
 
     <!-- BACKGROUND MUSIC -->
     <audio id="bg-music" src="assets/audio/Packing-Boxes.mp3"></audio>
 
-    <script type="module" src="js/game.js"></script>
+    <script type="module" src="js/game.js?v=1"></script>
 
 </body>
 </html>
