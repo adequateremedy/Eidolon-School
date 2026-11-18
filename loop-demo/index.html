@@ -144,8 +144,11 @@
                 <stop offset="0.5" stop-color="#241e18"/>
                 <stop offset="1" stop-color="#171310"/>
             </linearGradient>
+            <clipPath id="beltClip">
+                <path id="clipShape" d="" fill="none" stroke="#000" stroke-width="118"/>
+            </clipPath>
         </defs>
-        <g id="wheelLayer"></g>
+        <g id="wheelLayer" clip-path="url(#beltClip)"></g>
         <path id="beltOuter" d="" fill="none" stroke="url(#brass)" stroke-width="118" stroke-linecap="round"/>
         <path id="beltBed" d="" fill="none" stroke="url(#iron)" stroke-width="100" stroke-linecap="round"/>
         <path id="beltTread" d="" fill="none" stroke="rgba(232,201,122,0.16)" stroke-width="100" stroke-dasharray="30 22" stroke-linecap="butt"/>
@@ -235,35 +238,23 @@
     var crateQueue = [];
 
     function setPath(d) {
-        ['beltOuter', 'beltBed', 'beltTread', 'beltPin', 'ridePath'].forEach(function (id) {
+        ['beltOuter', 'beltBed', 'beltTread', 'beltPin', 'ridePath', 'clipShape'].forEach(function (id) {
             document.getElementById(id).setAttribute('d', d);
         });
         LEN = ridePath.getTotalLength();
         wheelLayer.innerHTML = '';
-        // where the belt passes close to itself (the turns and bays), a wheel's
-        // rim would scribble across the next run — those spots get no wheel
-        var samples = [];
-        for (var sd = 0; sd < LEN; sd += 8) samples.push(ridePath.getPointAtLength(sd));
         for (var dist = 0; dist < LEN; dist += 92) {
             var pt = ridePath.getPointAtLength(dist);
-            var crowded = false;
-            for (var si = 0; si < samples.length; si++) {
-                var dd = Math.abs(si * 8 - dist);
-                if (Math.min(dd, LEN - dd) < 150) continue;
-                var dx = samples[si].x - pt.x, dy = samples[si].y - pt.y;
-                if (dx * dx + dy * dy < 118 * 118) { crowded = true; break; }
-            }
-            if (crowded) continue;
             var g = document.createElementNS(svgNS, 'g');
             var c = document.createElementNS(svgNS, 'circle');
-            c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 56);
+            c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 62);
             c.setAttribute('fill', '#241c14'); c.setAttribute('stroke', '#6d5626'); c.setAttribute('stroke-width', '5');
             g.appendChild(c);
             for (var s = 0; s < 3; s++) {
                 var a = (Math.PI * 2 / 3) * s;
                 var line = document.createElementNS(svgNS, 'line');
-                line.setAttribute('x1', pt.x - Math.cos(a) * 46); line.setAttribute('y1', pt.y - Math.sin(a) * 46);
-                line.setAttribute('x2', pt.x + Math.cos(a) * 46); line.setAttribute('y2', pt.y + Math.sin(a) * 46);
+                line.setAttribute('x1', pt.x - Math.cos(a) * 52); line.setAttribute('y1', pt.y - Math.sin(a) * 52);
+                line.setAttribute('x2', pt.x + Math.cos(a) * 52); line.setAttribute('y2', pt.y + Math.sin(a) * 52);
                 line.setAttribute('stroke', '#54431f'); line.setAttribute('stroke-width', '7');
                 g.appendChild(line);
             }
@@ -496,7 +487,7 @@
             tread.style.strokeDashoffset = -(odometer % 52);
             var wheels = wheelLayer.children;
             for (var w = 0; w < wheels.length; w++) {
-                wheels[w].setAttribute('transform', 'rotate(' + ((odometer / 56 * 57.3) % 360) + ' ' + wheels[w].dataset.cx + ' ' + wheels[w].dataset.cy + ')');
+                wheels[w].setAttribute('transform', 'rotate(' + ((odometer / 62 * 57.3) % 360) + ' ' + wheels[w].dataset.cx + ' ' + wheels[w].dataset.cy + ')');
             }
 
             // traffic: nobody passes the item ahead, nobody stacks
