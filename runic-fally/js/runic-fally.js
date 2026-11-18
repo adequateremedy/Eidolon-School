@@ -202,6 +202,7 @@ async function syncDriveData() {
     state.regularStars = charData.class1RegularStars;
     state.bigStars = charData.class1BigStars;
     state.giantStars = charData.class1GiantStars;
+    return true;
 }
 
 // SIGN-IN & TOKEN RECOVERY
