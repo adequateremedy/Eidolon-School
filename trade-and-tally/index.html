@@ -1,0 +1,124 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade & Tally Class</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- =========================================================
+         INTRO SCREEN
+         ========================================================= -->
+    <div id="intro-screen" class="screen active">
+
+        <picture>
+            <source media="(max-width: 768px)" srcset="ui/intro_screen_mobile.png">
+            <img
+                id="intro-graphic"
+                src="ui/intro_screen_desktop.png"
+                alt="Trade and Tally Class"
+            >
+        </picture>
+
+        <img
+            id="start-btn"
+            src="ui/start_btn_v2.png"
+            alt="Start Lesson"
+        >
+
+    </div>
+
+
+    <!-- =========================================================
+         MAIN GAME BOARD
+         ========================================================= -->
+    <div id="game-screen" class="screen">
+
+        <div id="game-ui-header">
+            <div id="round-display">Round: 1 / 10</div>
+            <div id="truck-display">On the Truck: 0 / 5</div>
+            <div id="score-display">Score: 0 / 2000</div>
+            <button id="pause-btn">Pause</button>
+        </div>
+
+        <div id="game-layout">
+
+            <!-- BEGIN ROUND OVERLAY -->
+            <div id="begin-overlay">
+                <button id="begin-btn">Begin</button>
+            </div>
+
+            <!-- CONVEYOR BELT -->
+            <div id="conveyor-container">
+                <div id="moving-belt"></div>
+                <div id="static-frame"></div>
+                <div id="item-track"></div>
+            </div>
+
+            <!-- DROP BOXES -->
+            <div id="boxes-container"></div>
+
+        </div>
+
+    </div>
+
+    <!-- =========================================================
+         PAUSE / GLOSSARY SCREEN
+         ========================================================= -->
+    <div id="pause-screen" class="screen overlay-bg">
+        <div class="pause-content">
+            <h2>Game Paused - Item Glossary</h2>
+            <div id="glossary-grid"></div>
+            <button id="resume-btn">Resume Game</button>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         ROUND RESULTS SCREEN
+         ========================================================= -->
+    <div id="round-results-screen" class="screen overlay-bg">
+        <div class="results-content">
+            <h2 id="results-title">Round Complete!</h2>
+            <p id="results-stats"></p>
+            <button id="next-round-btn">Next Round</button>
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+         GAME OVER SCREEN
+         ========================================================= -->
+    <div id="game-over-screen" class="screen overlay-bg">
+        <img
+            id="game-over-img"
+            src="ui/game-over-screen.png"
+            alt="Shipment Ruined"
+        >
+        <p id="fail-reason-text"></p>
+        <button id="restart-btn">Try Again</button>
+    </div>
+
+
+    <!-- =========================================================
+         VICTORY SCREEN
+         ========================================================= -->
+    <div id="victory-screen" class="screen overlay-bg">
+        <div class="victory-content">
+            <h2>Class Complete!</h2>
+            <p>You have perfectly packed all shipments.</p>
+            <p>Final Score: 2000 / 2000</p>
+            <button id="return-hub-btn">Return to Hub (+100 EXP)</button>
+        </div>
+    </div>
+
+    <!-- BACKGROUND MUSIC -->
+    <audio id="bg-music" src="assets/audio/Packing-Boxes.mp3"></audio>
+
+    <script type="module" src="js/game.js"></script>
+
+</body>
+</html>
