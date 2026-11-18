@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trade &amp; Tally — Loop Belt Demo</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+        font-family: Georgia, 'Times New Roman', serif;
+        background: #171310 url('../trade-and-tally/assets/images/bg/Classroom-Floor.png') center / cover no-repeat fixed;
+        color: #f0e2c4;
+        overflow: hidden;
+        -webkit-user-select: none; user-select: none;
+        touch-action: none;
+    }
+    #shade { position: fixed; inset: 0; background: rgba(16, 11, 7, 0.45); }
+
+    #titlePlate {
+        position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+        background: linear-gradient(180deg, #2e2620, #1d1712);
+        border: 2px solid #a07d3c; border-radius: 10px;
+        padding: 8px 26px 10px; text-align: center;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(240,226,196,0.15);
+        z-index: 40; white-space: nowrap;
+    }
+    #titlePlate h1 { font-size: clamp(17px, 3.4vw, 26px); letter-spacing: 2px; color: #e8c97a; font-weight: normal; }
+    #titlePlate p { font-size: clamp(11px, 2vw, 13px); color: #c9b48a; font-style: italic; margin-top: 2px; }
+
+    #stage {
+        position: fixed; left: 50%; top: 52%; transform: translate(-50%, -50%);
+        width: min(97vw, 1060px);
+        aspect-ratio: 1000 / 640;
+        z-index: 5;
+    }
+    #beltSvg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+    .item {
+        position: absolute; width: 8.2%; aspect-ratio: 1; object-fit: contain;
+        transform: translate(-50%, -50%);
+        filter: drop-shadow(0 6px 5px rgba(0,0,0,0.55));
+        cursor: grab; z-index: 20; touch-action: none;
+    }
+    .item.dragging { cursor: grabbing; z-index: 60; filter: drop-shadow(0 14px 10px rgba(0,0,0,0.65)); }
+    .item.packed { transition: transform 0.18s ease, opacity 0.18s ease; transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+
+    #crates {
+        position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%);
+        display: flex; gap: clamp(10px, 3vw, 34px); z-index: 30;
+    }
+    .crate { text-align: center; width: clamp(96px, 15vw, 138px); }
+    .crate img {
+        width: 100%; display: block;
+        filter: drop-shadow(0 8px 8px rgba(0,0,0,0.6));
+    }
+    .crate .plate {
+        margin-top: 4px;
+        background: linear-gradient(180deg, #2e2620, #1d1712);
+        border: 2px solid #a07d3c; border-radius: 8px;
+        padding: 4px 4px 5px;
+        font-size: clamp(12px, 2.2vw, 16px); color: #f0e2c4; letter-spacing: 0.5px;
+    }
+    .crate .plate b { color: #e8c97a; font-weight: normal; }
+    .crate.done .plate { border-color: #7fae4c; color: #bfe39a; }
+    .crate.shake { animation: shake 0.35s ease; }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-7px); }
+        50% { transform: translateX(6px); }
+        75% { transform: translateX(-4px); }
+    }
+    .crate.flash img { filter: drop-shadow(0 0 14px rgba(255, 70, 50, 0.9)); }
+
+    #donePlate {
+        position: fixed; left: 50%; top: 44%; transform: translate(-50%, -50%) scale(0.9);
+        background: linear-gradient(180deg, #2e2620, #1d1712);
+        border: 3px solid #a07d3c; border-radius: 14px;
+        padding: 26px 44px; text-align: center; z-index: 70;
+        box-shadow: 0 12px 34px rgba(0,0,0,0.75);
+        opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #donePlate.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    #donePlate h2 { color: #e8c97a; letter-spacing: 2px; font-weight: normal; font-size: clamp(20px, 4vw, 30px); }
+    #donePlate p { color: #c9b48a; font-style: italic; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div id="shade"></div>
+
+<div id="titlePlate">
+    <h1>TRADE &amp; TALLY</h1>
+    <p>The loop belt — drag each item into the crate that asks for it</p>
+</div>
+
+<div id="stage">
+    <svg id="beltSvg" viewBox="0 0 1000 640" preserveAspectRatio="none">
+        <defs>
+            <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#c9a24d"/>
+                <stop offset="0.5" stop-color="#8a6b32"/>
+                <stop offset="1" stop-color="#5f4720"/>
+            </linearGradient>
+            <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3b342c"/>
+                <stop offset="0.5" stop-color="#241e18"/>
+                <stop offset="1" stop-color="#171310"/>
+            </linearGradient>
+        </defs>
+        <g id="wheelLayer"></g>
+        <!-- outer brass housing -->
+        <path id="beltOuter" d="" fill="none" stroke="url(#brass)" stroke-width="118" stroke-linecap="round"/>
+        <!-- dark belt bed -->
+        <path id="beltBed" d="" fill="none" stroke="url(#iron)" stroke-width="100" stroke-linecap="round"/>
+        <!-- moving tread -->
+        <path id="beltTread" d="" fill="none" stroke="rgba(232,201,122,0.16)" stroke-width="100" stroke-dasharray="30 22" stroke-linecap="butt"/>
+        <!-- inner brass pinstripe -->
+        <path id="beltPin" d="" fill="none" stroke="rgba(160,125,60,0.55)" stroke-width="3" stroke-dasharray="2 14"/>
+        <!-- the path the items ride (invisible) -->
+        <path id="ridePath" d="" fill="none" stroke="none"/>
+    </svg>
+</div>
+
+<div id="crates"></div>
+
+<div id="donePlate">
+    <h2>SHIPMENTS PACKED</h2>
+    <p>Every crate tallied right.</p>
+</div>
+
+<script>
+(function () {
+    var stage = document.getElementById('stage');
+    var svgNS = 'http://www.w3.org/2000/svg';
+
+    // ---- The loop: one closed path with curves. Each round of the real
+    // game can carry its own path; this demo rides a tall oval loop.
+    var LOOP_D = 'M 330 78 L 670 78 A 150 242 0 0 1 670 562 L 330 562 A 150 242 0 0 1 330 78 Z';
+    ['beltOuter', 'beltBed', 'beltTread', 'beltPin', 'ridePath'].forEach(function (id) {
+        document.getElementById(id).setAttribute('d', LOOP_D);
+    });
+    var ridePath = document.getElementById('ridePath');
+    var tread = document.getElementById('beltTread');
+    var LOOP_LEN = ridePath.getTotalLength();
+
+    // ---- Wheels under the belt rims, turning as the belt moves.
+    var wheelLayer = document.getElementById('wheelLayer');
+    var wheels = [];
+    (function buildWheels() {
+        var step = 64;
+        for (var d = 0; d < LOOP_LEN; d += step) {
+            var pt = ridePath.getPointAtLength(d);
+            var g = document.createElementNS(svgNS, 'g');
+            var c = document.createElementNS(svgNS, 'circle');
+            c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 66);
+            c.setAttribute('fill', '#241c14'); c.setAttribute('stroke', '#6d5626'); c.setAttribute('stroke-width', '5');
+            g.appendChild(c);
+            for (var s = 0; s < 3; s++) {
+                var line = document.createElementNS(svgNS, 'line');
+                var a = (Math.PI * 2 / 3) * s;
+                line.setAttribute('x1', pt.x - Math.cos(a) * 58); line.setAttribute('y1', pt.y - Math.sin(a) * 58);
+                line.setAttribute('x2', pt.x + Math.cos(a) * 58); line.setAttribute('y2', pt.y + Math.sin(a) * 58);
+                line.setAttribute('stroke', '#54431f'); line.setAttribute('stroke-width', '7');
+                g.appendChild(line);
+            }
+            var hub = document.createElementNS(svgNS, 'circle');
+            hub.setAttribute('cx', pt.x); hub.setAttribute('cy', pt.y); hub.setAttribute('r', 13);
+            hub.setAttribute('fill', '#a07d3c'); hub.setAttribute('stroke', '#5f4720'); hub.setAttribute('stroke-width', '3');
+            g.appendChild(hub);
+            wheelLayer.appendChild(g);
+            wheels.push({ g: g, x: pt.x, y: pt.y });
+        }
+    })();
+
+    // ---- Crates and their tallies.
+    var ITEM = '../trade-and-tally/assets/images/items/';
+    var CRATES = [
+        { id: 'c1', name: 'Pliers', file: ITEM + 'tools/Pliers-removebg-preview.png', need: 2, got: 0 },
+        { id: 'c2', name: 'Bolt',   file: ITEM + 'mechanical_parts/Bolt-removebg-preview.png', need: 2, got: 0 },
+        { id: 'c3', name: 'Gear',   file: ITEM + 'gears_cogs/Gear.png', need: 2, got: 0 }
+    ];
+    var DECOYS = [
+        { name: 'Hammer', file: ITEM + 'tools/Hammer-removebg-preview.png' },
+        { name: 'Nut',    file: ITEM + 'mechanical_parts/Nut-removebg-preview.png' },
+        { name: 'Cog',    file: ITEM + 'gears_cogs/Cog.png' },
+        { name: 'Screw',  file: ITEM + 'mechanical_parts/Screw-removebg-preview.png' },
+        { name: 'Crank',  file: ITEM + 'gears_cogs/Crank.png' }
+    ];
+
+    var cratesEl = document.getElementById('crates');
+    var crateEls = {};
+    CRATES.forEach(function (c) {
+        var div = document.createElement('div');
+        div.className = 'crate'; div.id = 'crate-' + c.id;
+        div.innerHTML = '<img src="../trade-and-tally/ui/box_empty.png" alt="">' +
+            '<div class="plate">' + c.name + ' &nbsp;<b id="tally-' + c.id + '">0 / ' + c.need + '</b></div>';
+        cratesEl.appendChild(div);
+        crateEls[c.id] = div;
+    });
+
+    // ---- Items riding the loop.
+    var SPEED = 58;               // pixels per second — slow enough to see
+    var MIN_GAP = 250;            // items never stack: this much belt between them
+    var MAX_ITEMS = 7;
+    var items = [];               // {el, dist, crateId|null, name, dragging}
+    var spawnClock = 0;
+    var queue = [];
+    CRATES.forEach(function (c) { for (var i = 0; i < c.need; i++) queue.push(c); });
+    // weave decoys through the queue so the belt is never all-business
+    var spawnPlan = [];
+    var di = 0;
+    queue.forEach(function (c, i) {
+        spawnPlan.push(c);
+        if (i % 2 === 1 && di < DECOYS.length) spawnPlan.push(DECOYS[di++]);
+    });
+    while (di < DECOYS.length) spawnPlan.push(DECOYS[di++]);
+
+    function gapFreeAt(dist) {
+        for (var i = 0; i < items.length; i++) {
+            var diff = Math.abs(items[i].dist - dist);
+            diff = Math.min(diff, LOOP_LEN - diff);
+            if (diff < MIN_GAP) return false;
+        }
+        return true;
+    }
+
+    function spawnNext() {
+        if (!spawnPlan.length || items.length >= MAX_ITEMS) return;
+        if (!gapFreeAt(0)) return;
+        var spec = spawnPlan.shift();
+        var img = document.createElement('img');
+        img.className = 'item';
+        img.src = spec.file;
+        img.alt = spec.name;
+        img.draggable = false;
+        stage.appendChild(img);
+        var obj = { el: img, dist: 0, crateId: spec.id || null, name: spec.name, dragging: false };
+        items.push(obj);
+        wireDrag(obj);
+    }
+
+    function placeOnLoop(obj) {
+        var pt = ridePath.getPointAtLength(obj.dist % LOOP_LEN);
+        obj.el.style.left = (pt.x / 10) + '%';
+        obj.el.style.top = (pt.y / 6.4) + '%';
+    }
+
+    // ---- Dragging: pull an item off the belt, drop it in a crate.
+    function wireDrag(obj) {
+        var el = obj.el;
+        el.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            obj.dragging = true;
+            el.classList.add('dragging');
+            el.setPointerCapture(e.pointerId);
+            moveToPointer(obj, e);
+        });
+        el.addEventListener('pointermove', function (e) {
+            if (obj.dragging) moveToPointer(obj, e);
+        });
+        el.addEventListener('pointerup', function (e) {
+            if (!obj.dragging) return;
+            obj.dragging = false;
+            el.classList.remove('dragging');
+            settleDrop(obj, e);
+        });
+        el.addEventListener('pointercancel', function () {
+            obj.dragging = false;
+            el.classList.remove('dragging');
+            placeOnLoop(obj);
+        });
+    }
+
+    function moveToPointer(obj, e) {
+        var r = stage.getBoundingClientRect();
+        obj.el.style.left = ((e.clientX - r.left) / r.width * 100) + '%';
+        obj.el.style.top = ((e.clientY - r.top) / r.height * 100) + '%';
+    }
+
+    function settleDrop(obj, e) {
+        var hit = null;
+        CRATES.forEach(function (c) {
+            var r = crateEls[c.id].getBoundingClientRect();
+            if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) hit = c;
+        });
+
+        if (hit && obj.crateId === hit.id && hit.got < hit.need) {
+            hit.got++;
+            document.getElementById('tally-' + hit.id).textContent = hit.got + ' / ' + hit.need;
+            if (hit.got >= hit.need) crateEls[hit.id].classList.add('done');
+            obj.el.classList.add('packed');
+            var dead = obj;
+            setTimeout(function () { dead.el.remove(); }, 190);
+            items = items.filter(function (i) { return i !== dead; });
+            if (CRATES.every(function (c) { return c.got >= c.need; })) {
+                document.getElementById('donePlate').classList.add('show');
+            }
+            return;
+        }
+
+        if (hit) {
+            var el = crateEls[hit.id];
+            el.classList.remove('shake', 'flash');
+            void el.offsetWidth;
+            el.classList.add('shake', 'flash');
+            setTimeout(function () { el.classList.remove('flash'); }, 380);
+        }
+        placeOnLoop(obj);
+    }
+
+    // ---- The ride.
+    var last = null;
+    function frame(ts) {
+        if (last === null) last = ts;
+        var dt = Math.min(0.05, (ts - last) / 1000);
+        last = ts;
+
+        var step = SPEED * dt;
+        tread.style.strokeDashoffset = -(performance.now() / 1000 * SPEED) % 52;
+        wheels.forEach(function (w) {
+            w.g.setAttribute('transform', 'rotate(' + ((performance.now() / 1000 * SPEED) / 66 * 57.3 % 360) + ' ' + w.x + ' ' + w.y + ')');
+        });
+
+        for (var i = 0; i < items.length; i++) {
+            if (!items[i].dragging) {
+                items[i].dist = (items[i].dist + step) % LOOP_LEN;
+                placeOnLoop(items[i]);
+            }
+        }
+
+        spawnClock += dt;
+        if (spawnClock > 1.4) { spawnClock = 0; spawnNext(); }
+
+        requestAnimationFrame(frame);
+    }
+    spawnNext();
+    requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
