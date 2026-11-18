@@ -240,14 +240,20 @@
         });
         LEN = ridePath.getTotalLength();
         wheelLayer.innerHTML = '';
+        // where the belt passes close to itself (the turns and bays), a wheel's
+        // rim would scribble across the next run — those spots get no wheel
+        var samples = [];
+        for (var sd = 0; sd < LEN; sd += 8) samples.push(ridePath.getPointAtLength(sd));
         for (var dist = 0; dist < LEN; dist += 92) {
             var pt = ridePath.getPointAtLength(dist);
-            // no wheels on sharp turns — their rims scribble across the channel
-            var pa = ridePath.getPointAtLength((dist - 26 + LEN) % LEN);
-            var pb = ridePath.getPointAtLength((dist + 26) % LEN);
-            var v1x = pt.x - pa.x, v1y = pt.y - pa.y, v2x = pb.x - pt.x, v2y = pb.y - pt.y;
-            var ang = Math.acos(Math.max(-1, Math.min(1, (v1x * v2x + v1y * v2y) / (Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y) || 1)))) * 57.3;
-            if (ang > 28) continue;
+            var crowded = false;
+            for (var si = 0; si < samples.length; si++) {
+                var dd = Math.abs(si * 8 - dist);
+                if (Math.min(dd, LEN - dd) < 150) continue;
+                var dx = samples[si].x - pt.x, dy = samples[si].y - pt.y;
+                if (dx * dx + dy * dy < 118 * 118) { crowded = true; break; }
+            }
+            if (crowded) continue;
             var g = document.createElementNS(svgNS, 'g');
             var c = document.createElementNS(svgNS, 'circle');
             c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y); c.setAttribute('r', 56);
