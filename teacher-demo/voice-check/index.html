@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Teacher — Voice Check</title>
+<style>
+  body { margin:0; background:#171310; color:#e8dcc3; font-family: Georgia, 'Times New Roman', serif;
+         display:flex; justify-content:center; padding:24px 14px 48px; }
+  .wrap { max-width:560px; width:100%; }
+  h1 { font-size:24px; color:#d9a441; margin:6px 0 4px; }
+  p.sub { color:#b8a888; margin:0 0 22px; font-size:15px; line-height:1.45; }
+  .card { background:#221c16; border:1px solid #4a3b28; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card.real { border-color:#2fa08a; }
+  .label { font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:#d9a441; margin-bottom:6px; }
+  .card.real .label { color:#2fa08a; }
+  .line { font-size:18px; line-height:1.5; margin:0 0 12px; font-style:italic; }
+  audio { width:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The Teacher — Voice Check</h1>
+  <p class="sub">First, her real voice from your clip. Then the three new lines, spoken in that
+  voice by the clone. Nothing goes in the game until you say it's her.</p>
+
+  <div class="card real">
+    <div class="label">Her real voice — from your clip</div>
+    <p class="line">"Welcome to Eidolon School. I am your teacher, and I am so glad you are here."</p>
+    <audio controls preload="auto" src="her-real-voice.mp3"></audio>
+  </div>
+
+  <div class="card">
+    <div class="label">Line 6 — The warning</div>
+    <p class="line">"But mind the belt. It holds only so many groups at once. If it fills up and nothing can move, it will jam, and the round is over."</p>
+    <audio controls preload="auto" src="line6.mp3"></audio>
+  </div>
+
+  <div class="card">
+    <div class="label">Line 7 — The send-off, first part</div>
+    <p class="line">"In a hurry? Hold the belt down, and it will hurry along with you."</p>
+    <audio controls preload="auto" src="line7.mp3"></audio>
+  </div>
+
+  <div class="card">
+    <div class="label">Line 8 — The send-off</div>
+    <p class="line">"Now then. Show me what you can do."</p>
+    <audio controls preload="auto" src="line8.mp3"></audio>
+  </div>
+</div>
+</body>
+</html>
