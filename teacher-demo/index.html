@@ -67,20 +67,22 @@
     <circle cx="200" cy="205" r="156" fill="none" stroke="#d9a441" stroke-width="2" opacity="0.7"/>
 
     <g id="person">
+      <!-- hair behind -->
+      <ellipse cx="200" cy="184" rx="120" ry="127" fill="url(#hairG)"/>
+      <path d="M92,180 C86,240 88,300 98,344 C106,348 116,346 120,338 C112,290 110,235 112,190 Z" fill="#6b3418"/>
+      <path d="M308,180 C314,240 312,300 302,344 C294,348 284,346 280,338 C288,290 290,235 288,190 Z" fill="#6b3418"/>
+
       <!-- shoulders and blouse -->
       <path d="M52,420 C60,352 128,322 200,322 C272,322 340,352 348,420 Z" fill="#6e2438"/>
       <path d="M52,420 C60,352 128,322 200,322 C272,322 340,352 348,420 Z" fill="none" stroke="#4a1624" stroke-width="3"/>
+
+      <!-- neck -->
+      <path d="M182,278 L182,336 Q200,346 218,336 L218,278 Q200,290 182,278 Z" fill="#e0aa76"/>
+
+      <!-- collar and brooch -->
       <path d="M168,330 Q200,356 232,330 L224,318 Q200,334 176,318 Z" fill="#f0e3c2"/>
       <circle cx="200" cy="366" r="11" fill="#b98a2f" stroke="#7c5a14" stroke-width="2"/>
       <circle cx="200" cy="366" r="4.5" fill="#2f4f4a"/>
-
-      <!-- neck -->
-      <path d="M184,282 L184,330 Q200,340 216,330 L216,282 Q200,292 184,282 Z" fill="#e0aa76"/>
-
-      <!-- hair behind -->
-      <ellipse cx="200" cy="192" rx="120" ry="130" fill="url(#hairG)"/>
-      <path d="M84,190 C78,262 88,308 100,330 L122,322 C112,272 110,230 112,196 Z" fill="#6b3418"/>
-      <path d="M316,190 C322,262 312,308 300,330 L278,322 C288,272 290,230 288,196 Z" fill="#6b3418"/>
 
       <!-- ears -->
       <circle cx="115" cy="208" r="12" fill="#eebd8d"/>
@@ -212,6 +214,7 @@ const dots = Array.from(dotsEl.children);
 
 let idx = -1;
 let audio = null;
+const player = new Audio();
 let lineEnded = false;
 let playToken = 0;
 let envelope = null;
@@ -299,8 +302,9 @@ async function playLine(i, autoplayNext) {
   btnMain.textContent = 'Pause';
   envelope = null;
   loadEnvelope(line.file).then(env => { if (idx === i) envelope = env; }).catch(() => {});
-  audio = new Audio(line.file);
-  audio.addEventListener('ended', () => {
+  audio = player;
+  audio.src = line.file;
+  audio.onended = () => {
     if (token !== playToken) return;
     lineEnded = true;
     playing = false;
@@ -316,7 +320,7 @@ async function playLine(i, autoplayNext) {
     } else {
       btnMain.textContent = 'Keep going';
     }
-  });
+  };
   playing = true;
   try { await audio.play(); } catch (e) { /* tap Begin again if the browser held the sound back */ }
   frame();
