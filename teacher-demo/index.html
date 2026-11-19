@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Teacher — Eidolon School Example</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:#17130e; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    color:#e8dcc0;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:12px 8px 20px;
+    -webkit-user-select:none; user-select:none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 { font-size:20px; letter-spacing:2px; color:#d9a441; margin:4px 0 2px; text-align:center; }
+  .sub { font-size:12.5px; color:#a08c5a; letter-spacing:1px; margin-bottom:10px; text-align:center; }
+  #portrait { width:min(400px, 92vw); height:auto; display:block; }
+  #caption {
+    width:min(560px, 94vw); min-height:74px; margin-top:12px;
+    background:#241b10; border:2px solid #8a6a24; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    padding:12px 20px; text-align:center;
+    font-size:19px; line-height:1.45; color:#f4ead2;
+  }
+  #controls { display:flex; gap:10px; margin-top:14px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  button {
+    font-family:inherit; font-size:15.5px; letter-spacing:1px;
+    background:#8a6a24; color:#fff8e6; border:1px solid #d9a441;
+    border-radius:8px; padding:9px 20px; cursor:pointer;
+  }
+  button:hover { background:#a37f2c; }
+  button.ghost { background:transparent; color:#cbb87e; }
+  #dots { display:flex; gap:6px; margin-top:12px; }
+  #dots span { width:9px; height:9px; border-radius:50%; background:#4a3a1c; display:block; }
+  #dots span.on { background:#d9a441; }
+  #dots span.done { background:#8a6a24; }
+  .note { font-size:12.5px; color:#8a795a; margin-top:14px; text-align:center; line-height:1.5; max-width:560px; }
+</style>
+</head>
+<body>
+  <h1>THE TEACHER</h1>
+  <div class="sub">EIDOLON SCHOOL &middot; CLASS 2 &middot; COUNTING AND PACKING</div>
+
+  <svg id="portrait" viewBox="0 0 400 420" aria-label="The Teacher">
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="42%" r="65%">
+        <stop offset="0%" stop-color="#3d5a54"/>
+        <stop offset="70%" stop-color="#24382f"/>
+        <stop offset="100%" stop-color="#182420"/>
+      </radialGradient>
+      <linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#8a4a28"/>
+        <stop offset="100%" stop-color="#5a2c14"/>
+      </linearGradient>
+      <linearGradient id="skinG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f6cdA2"/>
+        <stop offset="100%" stop-color="#eebd8d"/>
+      </linearGradient>
+      <clipPath id="mouthClip"><ellipse cx="200" cy="276" rx="14" ry="12"/></clipPath>
+    </defs>
+
+    <circle cx="200" cy="205" r="168" fill="url(#glow)"/>
+    <circle cx="200" cy="205" r="168" fill="none" stroke="#8a6a24" stroke-width="7"/>
+    <circle cx="200" cy="205" r="156" fill="none" stroke="#d9a441" stroke-width="2" opacity="0.7"/>
+
+    <g id="person">
+      <!-- shoulders and blouse -->
+      <path d="M52,420 C60,352 128,322 200,322 C272,322 340,352 348,420 Z" fill="#6e2438"/>
+      <path d="M52,420 C60,352 128,322 200,322 C272,322 340,352 348,420 Z" fill="none" stroke="#4a1624" stroke-width="3"/>
+      <path d="M168,330 Q200,356 232,330 L224,318 Q200,334 176,318 Z" fill="#f0e3c2"/>
+      <circle cx="200" cy="366" r="11" fill="#b98a2f" stroke="#7c5a14" stroke-width="2"/>
+      <circle cx="200" cy="366" r="4.5" fill="#2f4f4a"/>
+
+      <!-- neck -->
+      <path d="M184,282 L184,330 Q200,340 216,330 L216,282 Q200,292 184,282 Z" fill="#e0aa76"/>
+
+      <!-- hair behind -->
+      <ellipse cx="200" cy="192" rx="120" ry="130" fill="url(#hairG)"/>
+      <path d="M84,190 C78,262 88,308 100,330 L122,322 C112,272 110,230 112,196 Z" fill="#6b3418"/>
+      <path d="M316,190 C322,262 312,308 300,330 L278,322 C288,272 290,230 288,196 Z" fill="#6b3418"/>
+
+      <!-- ears -->
+      <circle cx="115" cy="208" r="12" fill="#eebd8d"/>
+      <circle cx="285" cy="208" r="12" fill="#eebd8d"/>
+
+      <!-- face -->
+      <ellipse cx="200" cy="198" rx="87" ry="99" fill="url(#skinG)"/>
+
+      <!-- cheeks -->
+      <ellipse cx="146" cy="250" rx="15" ry="8" fill="#e88f6a" opacity="0.35"/>
+      <ellipse cx="254" cy="250" rx="15" ry="8" fill="#e88f6a" opacity="0.35"/>
+
+      <!-- hair top and bun -->
+      <circle cx="200" cy="58" r="33" fill="url(#hairG)"/>
+      <rect x="172" y="52" width="56" height="7" rx="3.5" fill="#b98a2f" transform="rotate(-14 200 55)"/>
+      <path d="M112,196 C104,96 152,52 200,52 C248,52 296,96 288,196 C276,128 244,106 200,106 C156,106 124,128 112,196 Z" fill="url(#hairG)"/>
+
+      <!-- goggles resting on the hair -->
+      <path d="M118,116 Q200,92 282,116" fill="none" stroke="#4a2f16" stroke-width="7"/>
+      <circle cx="160" cy="112" r="22" fill="#33524c" stroke="#b98a2f" stroke-width="6"/>
+      <circle cx="240" cy="112" r="22" fill="#33524c" stroke="#b98a2f" stroke-width="6"/>
+      <circle cx="152" cy="104" r="6" fill="#cfe8dd" opacity="0.75"/>
+      <circle cx="232" cy="104" r="6" fill="#cfe8dd" opacity="0.75"/>
+      <rect x="180" y="106" width="40" height="7" rx="3" fill="#b98a2f"/>
+
+      <!-- brows -->
+      <path id="browL" d="M146,182 Q167,174 188,182" fill="none" stroke="#4a2410" stroke-width="5" stroke-linecap="round"/>
+      <path id="browR" d="M212,182 Q233,174 254,182" fill="none" stroke="#4a2410" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- eyes -->
+      <g id="eyeL" style="transform-box: fill-box; transform-origin: center;">
+        <ellipse cx="167" cy="208" rx="13.5" ry="10.5" fill="#fffaf0"/>
+        <circle cx="167" cy="209" r="6.4" fill="#4a7a3a"/>
+        <circle cx="167" cy="209" r="3.1" fill="#1c1410"/>
+        <circle cx="164.8" cy="206.4" r="1.6" fill="#ffffff"/>
+        <path d="M153,206 Q167,196 181,206" fill="none" stroke="#3a2418" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g id="eyeR" style="transform-box: fill-box; transform-origin: center;">
+        <ellipse cx="233" cy="208" rx="13.5" ry="10.5" fill="#fffaf0"/>
+        <circle cx="233" cy="209" r="6.4" fill="#4a7a3a"/>
+        <circle cx="233" cy="209" r="3.1" fill="#1c1410"/>
+        <circle cx="230.8" cy="206.4" r="1.6" fill="#ffffff"/>
+        <path d="M219,206 Q233,196 247,206" fill="none" stroke="#3a2418" stroke-width="3" stroke-linecap="round"/>
+      </g>
+
+      <!-- nose -->
+      <path d="M201,218 Q196,234 200,240 Q205,243 209,240" fill="none" stroke="#d89a62" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- mouth shapes, one visible at a time -->
+      <g id="mouth">
+        <path id="m-closed" d="M184,272 Q200,277 216,272" fill="none" stroke="#8a4a38" stroke-width="3.5" stroke-linecap="round"/>
+        <path id="m-smile" d="M178,268 Q200,290 222,268" fill="none" stroke="#8a4a38" stroke-width="3.5" stroke-linecap="round" style="display:none"/>
+        <g id="m-o1" style="display:none">
+          <ellipse cx="200" cy="274" rx="9" ry="5" fill="#6e2f24"/>
+          <ellipse cx="200" cy="276.5" rx="5" ry="2.4" fill="#b0604f"/>
+        </g>
+        <g id="m-o2" style="display:none">
+          <ellipse cx="200" cy="276" rx="14" ry="12" fill="#6e2f24"/>
+          <g clip-path="url(#mouthClip)">
+            <rect x="185" y="263" width="30" height="7" fill="#fff8ee"/>
+            <ellipse cx="200" cy="285" rx="8.5" ry="4.5" fill="#b0604f"/>
+          </g>
+        </g>
+        <circle id="m-round" cx="200" cy="275" r="7.5" fill="#6e2f24" style="display:none"/>
+      </g>
+    </g>
+  </svg>
+
+  <div id="caption">Tap Begin, and I will tell you how this class goes.</div>
+
+  <div id="controls">
+    <button id="btnMain">Begin</button>
+    <button id="btnAgain" class="ghost">Hear that again</button>
+    <button id="btnNext" class="ghost">Next</button>
+  </div>
+  <div id="dots"></div>
+
+  <div class="note">An example Teacher for Eidolon School. Her face is drawn once and her eyes,
+  brows and mouth are swapped on that same face. Her lines were recorded ahead of time,
+  and her mouth rides the loudness of her own voice while the words run underneath.</div>
+
+<script>
+'use strict';
+
+const LINES = [
+  { file:'audio/line1.mp3', face:'warm',
+    text:'Welcome to Eidolon School. I am your teacher, and I am so glad you are here.' },
+  { file:'audio/line2.mp3', face:'plain',
+    text:'This class is Counting and Packing. See the trays standing all around the belt?' },
+  { file:'audio/line3.mp3', face:'plain',
+    text:'Tap a tray, and the cubes at its front hop onto the belt and ride all the way around.' },
+  { file:'audio/line4.mp3', face:'plain',
+    text:'A tray takes in only the cubes that match the color at its front.' },
+  { file:'audio/line5.mp3', face:'pleased',
+    text:'Gather four cubes of one color in a tray, and that tray is finished. Finish every tray, and you pass the class.' },
+  { file:'audio/line6.mp3', face:'stern',
+    text:'But mind the belt. It holds only so many groups at once. If it fills up and nothing can move, it will jam, and the round is over.' },
+  { file:'audio/line7.mp3', face:'plain',
+    text:'In a hurry? Hold the belt down, and it will hurry along with you.' },
+  { file:'audio/line8.mp3', face:'pleased',
+    text:'Now then. Show me what you can do.' }
+];
+
+const BROWS = {
+  warm:    ['M146,176 Q167,166 188,176', 'M212,176 Q233,166 254,176'],
+  plain:   ['M146,182 Q167,174 188,182', 'M212,182 Q233,174 254,182'],
+  pleased: ['M146,178 Q167,169 188,178', 'M212,178 Q233,169 254,178'],
+  stern:   ['M146,174 Q168,176 189,187', 'M254,174 Q232,176 211,187']
+};
+
+const captionEl = document.getElementById('caption');
+const btnMain = document.getElementById('btnMain');
+const btnAgain = document.getElementById('btnAgain');
+const btnNext = document.getElementById('btnNext');
+const dotsEl = document.getElementById('dots');
+const browL = document.getElementById('browL');
+const browR = document.getElementById('browR');
+const person = document.getElementById('person');
+const mouths = {
+  closed: document.getElementById('m-closed'),
+  smile:  document.getElementById('m-smile'),
+  o1:     document.getElementById('m-o1'),
+  o2:     document.getElementById('m-o2'),
+  round:  document.getElementById('m-round')
+};
+
+LINES.forEach(() => { const s = document.createElement('span'); dotsEl.appendChild(s); });
+const dots = Array.from(dotsEl.children);
+
+let idx = -1;
+let audio = null;
+let lineEnded = false;
+let playToken = 0;
+let envelope = null;
+let playing = false;
+let smooth = 0;
+let mouthNow = '';
+let rafId = null;
+let gapTimer = null;
+
+function setMouth(name) {
+  if (name === mouthNow) return;
+  mouthNow = name;
+  for (const k in mouths) mouths[k].style.display = (k === name) ? '' : 'none';
+}
+function setFace(face) {
+  const b = BROWS[face] || BROWS.plain;
+  browL.setAttribute('d', b[0]);
+  browR.setAttribute('d', b[1]);
+}
+function idleMouth() {
+  if (idx < 0) return setMouth('smile');
+  const f = LINES[idx].face;
+  setMouth(f === 'pleased' || f === 'warm' ? 'smile' : 'closed');
+}
+
+async function loadEnvelope(url) {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  const decoded = await ctx.decodeAudioData(buf);
+  const data = decoded.getChannelData(0);
+  const bucket = Math.floor(decoded.sampleRate * 0.04);
+  const env = [];
+  let peak = 0.0001;
+  for (let i = 0; i < data.length; i += bucket) {
+    let sum = 0, n = 0;
+    for (let j = i; j < Math.min(i + bucket, data.length); j += 7) { sum += data[j] * data[j]; n++; }
+    const rms = Math.sqrt(sum / Math.max(1, n));
+    env.push(rms);
+    if (rms > peak) peak = rms;
+  }
+  ctx.close();
+  return env.map(v => Math.min(1, v / (peak * 0.92)));
+}
+
+function frame() {
+  if (!playing || !audio) return;
+  const t = audio.currentTime;
+  let level = 0;
+  if (envelope) {
+    const b = Math.floor(t / 0.04);
+    level = envelope[Math.min(b, envelope.length - 1)] || 0;
+  }
+  smooth = level > smooth ? level : smooth * 0.72 + level * 0.28;
+  const L = smooth;
+  if (L < 0.05) idleMouth();
+  else if (L < 0.30) setMouth('o1');
+  else if (L < 0.68) setMouth('o2');
+  else setMouth(Math.floor(t / 0.09) % 2 ? 'o2' : 'round');
+  const bob = L * 3.2;
+  person.setAttribute('transform', 'translate(0 ' + bob.toFixed(2) + ')');
+  rafId = requestAnimationFrame(frame);
+}
+
+function stopCurrent() {
+  if (audio) { audio.pause(); audio = null; }
+  playing = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; }
+  person.setAttribute('transform', '');
+}
+
+async function playLine(i, autoplayNext) {
+  stopCurrent();
+  const token = ++playToken;
+  lineEnded = false;
+  idx = i;
+  const line = LINES[i];
+  dots.forEach((d, j) => {
+    d.className = j < i ? 'done' : (j === i ? 'on' : '');
+  });
+  setFace(line.face);
+  captionEl.textContent = line.text;
+  btnMain.textContent = 'Pause';
+  envelope = null;
+  loadEnvelope(line.file).then(env => { if (idx === i) envelope = env; }).catch(() => {});
+  audio = new Audio(line.file);
+  audio.addEventListener('ended', () => {
+    if (token !== playToken) return;
+    lineEnded = true;
+    playing = false;
+    idleMouth();
+    person.setAttribute('transform', '');
+    if (autoplayNext && i + 1 < LINES.length) {
+      gapTimer = setTimeout(() => playLine(i + 1, true), 480);
+    } else if (i + 1 >= LINES.length) {
+      btnMain.textContent = 'Hear her again';
+      captionEl.textContent = 'Class begins. Good luck, little sprocket.';
+      setFace('pleased');
+      setMouth('smile');
+    } else {
+      btnMain.textContent = 'Keep going';
+    }
+  });
+  playing = true;
+  try { await audio.play(); } catch (e) { /* tap Begin again if the browser held the sound back */ }
+  frame();
+}
+
+btnMain.addEventListener('click', () => {
+  if (playing && audio) {
+    audio.pause();
+    playing = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    idleMouth();
+    person.setAttribute('transform', '');
+    btnMain.textContent = 'Keep going';
+    return;
+  }
+  if (audio && idx >= 0 && audio.currentTime > 0 && !audio.ended) {
+    playing = true;
+    audio.play();
+    btnMain.textContent = 'Pause';
+    frame();
+    return;
+  }
+  if (lineEnded && idx + 1 < LINES.length) { playLine(idx + 1, true); return; }
+  playLine(0, true);
+});
+
+btnAgain.addEventListener('click', () => { if (idx >= 0) playLine(idx, false); });
+btnNext.addEventListener('click', () => {
+  if (idx + 1 < LINES.length) playLine(idx + 1, true);
+});
+
+/* blinking */
+const eyeL = document.getElementById('eyeL');
+const eyeR = document.getElementById('eyeR');
+function blink() {
+  eyeL.style.transform = 'scaleY(0.08)';
+  eyeR.style.transform = 'scaleY(0.08)';
+  setTimeout(() => {
+    eyeL.style.transform = '';
+    eyeR.style.transform = '';
+    setTimeout(blink, 2100 + Math.random() * 2400);
+  }, 130);
+}
+setTimeout(blink, 1400);
+setMouth('smile');
+
+window.__teacher = {
+  get state() {
+    return {
+      line: idx, playing,
+      mouth: mouthNow,
+      caption: captionEl.textContent,
+      brows: browL.getAttribute('d')
+    };
+  },
+  playLine
+};
+</script>
+</body>
+</html>
